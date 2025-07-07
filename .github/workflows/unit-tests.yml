@@ -51,25 +51,11 @@ jobs:
 
       - name: Check coverage
         run: |
-          # Run coverage report and capture the output
-          if ! coverage_output=$(uv run --python $PYTHON_VERSION coverage report -m 2>/dev/null); then
-              echo "Error: Failed to run coverage report"
-              exit 1
-          fi
-          
-          # Extract coverage percentage from the last line
-          coverage=$(echo "$coverage_output" | tail -1 | grep -o '[0-9]\+%' | head -1 | sed 's/%//')
-          
-          if [ -z "$coverage" ]; then
-              echo "Error: Could not extract coverage percentage from output:"
-              echo "$coverage_output"
-              exit 1
-          fi
-          
+          coverage=$(uv run --python $PYTHON_VERSION --group unit coverage report -m | tail -1 | tail -c 4 | head -c 2)
           echo "Total coverage: ${coverage}%"
           
           # Check if coverage is below the threshold
-          if [ "$coverage" -lt 40 ]; then
+          if (( ${coverage} < 40 )); then
               echo "Coverage failed at ${coverage}%, expected at least 40%"
               exit 1
           else
