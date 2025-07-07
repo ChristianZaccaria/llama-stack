@@ -49,7 +49,7 @@ jobs:
             htmlcov-${{ matrix.python }}/
           retention-days: 7
 
-      - name: Check coverage
+      - name: Check Coverage
         run: |
           coverage=$(uv run --python ${{ matrix.python }} --group unit coverage report -m | tail -1 | tail -c 4 | head -c 2)
           echo "Total coverage: ${coverage}%"
