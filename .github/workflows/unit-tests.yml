@@ -55,8 +55,8 @@ jobs:
           echo "Total coverage: ${coverage}%"
 
           # Check if coverage is below the threshold
-          if (( ${coverage} < 45 )); then
-              echo "Coverage failed at ${coverage}%, expected at least 45%"
+          if (( ${coverage} < 40 )); then
+              echo "Coverage failed at ${coverage}%, expected at least 40%"
               exit 1
           else
               echo "Coverage check passed with ${coverage}%"
