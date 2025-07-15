@@ -15,7 +15,7 @@ The OpenAI Responses API is a lightweight, stateless system that provides a simp
 | Feature | Agents API | OpenAI Responses API |
 |---------|------------|---------------------|
 | **State Management** | Full session persistence with turns, steps, and metadata | Stateless - each request is independent |
-| **Complexity** | High - complete agent lifecycle management | Low - simple request/response pattern |
+| **Functional Scope** | Complete agent lifecycle management | Simple request/response pattern |
 | **Use Case** | Multi-turn conversations, complex workflows | Single-turn tool calling, simple integrations |
 | **Execution Tracking** | Detailed step-by-step execution logs | Basic response with tool calls |
 | **Session Management** | Built-in session creation and management | No session concept |
