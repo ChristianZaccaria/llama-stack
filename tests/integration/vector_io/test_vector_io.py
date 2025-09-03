@@ -127,7 +127,6 @@ def test_insert_chunks_with_precomputed_embeddings(client_with_empty_registry, e
         "inline::milvus": {"score_threshold": -1.0},
         "inline::qdrant": {"score_threshold": -1.0},
         "remote::qdrant": {"score_threshold": -1.0},
-        "remote::weaviate": {"score_threshold": -1.0},
     }
     vector_db_id = "test_precomputed_embeddings_db"
     client_with_empty_registry.vector_dbs.register(
