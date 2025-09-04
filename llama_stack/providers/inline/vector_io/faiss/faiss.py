@@ -52,7 +52,7 @@ OPENAI_VECTOR_STORES_FILES_CONTENTS_PREFIX = f"openai_vector_stores_files_conten
 
 class FaissIndex(EmbeddingIndex):
     def __init__(self, dimension: int, kvstore: KVStore | None = None, bank_id: str | None = None):
-        self.index = faiss.IndexFlatL2(dimension)
+        self.index = faiss.IndexFlatIP(dimension)
         self.chunk_by_index: dict[int, Chunk] = {}
         self.kvstore = kvstore
         self.bank_id = bank_id
@@ -122,8 +122,12 @@ class FaissIndex(EmbeddingIndex):
         for i, chunk in enumerate(chunks):
             self.chunk_by_index[indexlen + i] = chunk
 
+        # Normalize embeddings for cosine similarity
+        normalized_embeddings = np.array(embeddings).astype(np.float32)
+        faiss.normalize_L2(normalized_embeddings)
+
         async with self.chunk_id_lock:
-            self.index.add(np.array(embeddings).astype(np.float32))
+            self.index.add(normalized_embeddings)
             self.chunk_ids.extend([chunk.chunk_id for chunk in chunks])
 
         # Save updated index
@@ -160,13 +164,18 @@ class FaissIndex(EmbeddingIndex):
         k: int,
         score_threshold: float,
     ) -> QueryChunksResponse:
-        distances, indices = await asyncio.to_thread(self.index.search, embedding.reshape(1, -1).astype(np.float32), k)
+        # Normalize query embedding for cosine similarity
+        query_embedding = embedding.reshape(1, -1).astype(np.float32)
+        faiss.normalize_L2(query_embedding)
+
+        distances, indices = await asyncio.to_thread(self.index.search, query_embedding, k)
         chunks = []
         scores = []
         for d, i in zip(distances[0], indices[0], strict=False):
             if i < 0:
                 continue
-            score = 1.0 / float(d) if d != 0 else float("inf")
+            # For IndexFlatIP with normalized vectors, distance is cosine similarity in [0,1]
+            score = float(d)
             if score < score_threshold:
                 continue
             chunks.append(self.chunk_by_index[int(i)])
@@ -241,7 +250,7 @@ class FaissVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorDBsProtocolPr
         """
         try:
             vector_dimension = 128  # sample dimension
-            faiss.IndexFlatL2(vector_dimension)
+            faiss.IndexFlatIP(vector_dimension)
             return HealthResponse(status=HealthStatus.OK)
         except Exception as e:
             return HealthResponse(status=HealthStatus.ERROR, message=f"Health check failed: {str(e)}")

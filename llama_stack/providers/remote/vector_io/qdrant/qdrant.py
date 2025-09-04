@@ -124,7 +124,8 @@ class QdrantIndex(EmbeddingIndex):
                 continue
 
             chunks.append(chunk)
-            scores.append(point.score)
+            # Cosine similarity range [-1,1] -> normalized to [0,1]
+            scores.append((point.score + 1.0) / 2.0)
 
         return QueryChunksResponse(chunks=chunks, scores=scores)
 

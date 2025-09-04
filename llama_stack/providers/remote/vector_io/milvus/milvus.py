@@ -36,7 +36,7 @@ from llama_stack.providers.utils.vector_io.vector_utils import sanitize_collecti
 
 from .config import MilvusVectorIOConfig as RemoteMilvusVectorIOConfig
 
-logger = get_logger(name=__name__, category="vector_io::milvus")
+logger = get_logger(name=__name__, category="vector_io")
 
 VERSION = "v3"
 VECTOR_DBS_PREFIX = f"vector_dbs:milvus:{VERSION}::"
@@ -163,7 +163,8 @@ class MilvusIndex(EmbeddingIndex):
             search_params={"params": {"radius": score_threshold}},
         )
         chunks = [Chunk(**res["entity"]["chunk_content"]) for res in search_res[0]]
-        scores = [res["distance"] for res in search_res[0]]
+        # Cosine distance range [0,2] -> normalize to [0,1]
+        scores = [1.0 - (res["distance"] / 2.0) for res in search_res[0]]
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(

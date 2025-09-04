@@ -196,7 +196,8 @@ class PGVectorIndex(EmbeddingIndex):
             chunks = []
             scores = []
             for doc, dist in results:
-                score = 1.0 / float(dist) if dist != 0 else float("inf")
+                # Cosine distance range [0,2] -> normalized to [0,1]
+                score = 1.0 - (float(dist) / 2.0)
                 if score < score_threshold:
                     continue
                 chunks.append(Chunk(**doc))

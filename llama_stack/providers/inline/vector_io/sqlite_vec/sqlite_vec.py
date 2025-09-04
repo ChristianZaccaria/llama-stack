@@ -248,7 +248,8 @@ class SQLiteVecIndex(EmbeddingIndex):
         chunks, scores = [], []
         for row in rows:
             _id, chunk_json, distance = row
-            score = 1.0 / distance if distance != 0 else float("inf")
+            # Cosine distance range [0,2] -> normalized to [0,1]
+            score = 1.0 - (float(distance) / 2.0)
             if score < score_threshold:
                 continue
             try:

@@ -96,7 +96,8 @@ class ChromaIndex(EmbeddingIndex):
                 log.exception(f"Failed to parse document: {doc}")
                 continue
 
-            score = 1.0 / float(dist) if dist != 0 else float("inf")
+            # Cosine distance range [0,2] -> normalized to [0,1]
+            score = 1.0 - (float(dist) / 2.0)
             if score < score_threshold:
                 continue
 
@@ -177,7 +178,10 @@ class ChromaVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorDBsProtocolP
         collection = await maybe_await(
             self.client.get_or_create_collection(
                 name=vector_db.identifier,
-                metadata={"vector_db": vector_db.model_dump_json()},
+                metadata={
+                    "vector_db": vector_db.model_dump_json(),
+                    "hnsw:space": "cosine",  # Returns cosine distance
+                },
             )
         )
         self.cache[vector_db.identifier] = VectorDBWithIndex(
