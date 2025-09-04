@@ -124,9 +124,9 @@ def test_insert_chunks(client_with_empty_registry, embedding_model_id, embedding
 
 def test_insert_chunks_with_precomputed_embeddings(client_with_empty_registry, embedding_model_id, embedding_dimension):
     vector_io_provider_params_dict = {
-        "inline::milvus": {"score_threshold": -1.0},
-        "remote::qdrant": {"score_threshold": -1.0},
-        "inline::qdrant": {"score_threshold": -1.0},
+        "inline::milvus": {"score_threshold": 0.0},
+        "remote::qdrant": {"score_threshold": 0.0},
+        "inline::qdrant": {"score_threshold": 0.0},
     }
     vector_db_id = "test_precomputed_embeddings_db"
     client_with_empty_registry.vector_dbs.register(
@@ -205,3 +205,59 @@ def test_query_returns_valid_object_when_identical_to_embedding_in_vdb(
     assert len(response.chunks) > 0
     assert response.chunks[0].metadata["document_id"] == "doc1"
     assert response.chunks[0].metadata["source"] == "precomputed"
+
+
+def test_vector_similarity_scores_are_normalized(
+    client_with_empty_registry, embedding_model_id, embedding_dimension, sample_chunks
+):
+    """Test that vector similarity scores are properly normalized to [0,1] range for all vector providers."""
+    vector_db_id = "test_score_normalization_db"
+    client_with_empty_registry.vector_dbs.register(
+        vector_db_id=vector_db_id,
+        embedding_model=embedding_model_id,
+        embedding_dimension=embedding_dimension,
+    )
+
+    # Insert sample chunks
+    client_with_empty_registry.vector_io.insert(
+        vector_db_id=vector_db_id,
+        chunks=sample_chunks,
+    )
+
+    # Test various queries to ensure score normalization across different similarity levels
+    test_queries = [
+        # High similarity query that should match Python doc chunk
+        "Python programming language with readable code",
+        # Medium similarity query
+        "artificial intelligence and machine learning systems",
+        # Lower similarity query
+        "What is the capital of France?",
+        # High similarity query that should match neural networks chunk
+        "biological neural networks and artificial neurons",
+    ]
+
+    for query in test_queries:
+        response = client_with_empty_registry.vector_io.query(
+            vector_db_id=vector_db_id,
+            query=query,
+        )
+
+        # Verify response structure
+        assert response is not None, f"Query '{query}' returned None response"
+        assert len(response.chunks) > 0, f"Query '{query}' returned no chunks"
+        assert len(response.scores) > 0, f"Query '{query}' returned no scores"
+        assert len(response.chunks) == len(response.scores), "Mismatch between chunks and scores count"
+
+        # Verify all scores are normalized to [0,1] range
+        for i, score in enumerate(response.scores):
+            assert isinstance(score, (int | float)), f"Score at index {i} is not numeric: {type(score)}"
+            assert 0.0 <= score <= 1.0, (
+                f"Score at index {i} is not normalized: {score} (should be in [0,1] range) for query '{query}'"
+            )
+
+        # Verify scores are in descending order (most similar first)
+        for i in range(1, len(response.scores)):
+            assert response.scores[i - 1] >= response.scores[i], (
+                f"Scores not in descending order at indices {i - 1} and {i}: "
+                f"{response.scores[i - 1]} >= {response.scores[i]} for query '{query}'"
+            )
