@@ -162,10 +162,13 @@ class MilvusIndex(EmbeddingIndex):
             output_fields=["*"],
             search_params={"params": {"radius": score_threshold}},
         )
-        chunks = [Chunk(**res["entity"]["chunk_content"]) for res in search_res[0]]
-        # Cosine distance range [0,2] -> normalize to [0,1]
-        scores = [1.0 - (res["distance"] / 2.0) for res in search_res[0]]
-        return QueryChunksResponse(chunks=chunks, scores=scores)
+        results = [
+            (Chunk(**res["entity"]["chunk_content"]), max(0.0, 1.0 - (res["distance"] / 2.0))) for res in search_res[0]
+        ]
+        results.sort(key=lambda x: x[1], reverse=True)
+
+        chunks, scores = zip(*results, strict=False) if results else ([], [])
+        return QueryChunksResponse(chunks=list(chunks), scores=list(scores))
 
     async def query_keyword(
         self,
