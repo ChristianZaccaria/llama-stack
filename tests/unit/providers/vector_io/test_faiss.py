@@ -119,8 +119,9 @@ async def test_faiss_query_vector_returns_perfect_score_when_query_and_embedding
     query_embedding = np.random.rand(embedding_dimension).astype(np.float32)
 
     with patch.object(faiss_index.index, "search") as mock_search:
-        # IndexFlatIP with normalized vectors returns cosine similarity scores [0,1]
-        mock_search.return_value = (np.array([[1.0, 0.8]]), np.array([[0, 1]]))
+        # IndexFlatIP with normalized vectors returns cosine similarity scores [-1,1]
+        # These will be normalized to [0,1] using (score + 1.0) / 2.0
+        mock_search.return_value = (np.array([[1.0, 0.6]]), np.array([[0, 1]]))
 
         response = await faiss_index.query_vector(embedding=query_embedding, k=2, score_threshold=0.0)
 
@@ -128,8 +129,8 @@ async def test_faiss_query_vector_returns_perfect_score_when_query_and_embedding
         assert len(response.chunks) == 2
         assert len(response.scores) == 2
 
-        assert response.scores[0] == 1.0  # perfect cosine similarity
-        assert response.scores[1] == 0.8  # high cosine similarity
+        assert response.scores[0] == 1.0  # (1.0 + 1.0) / 2.0 = 1.0 (perfect similarity)
+        assert response.scores[1] == 0.8  # (0.6 + 1.0) / 2.0 = 0.8 (high similarity)
 
         assert response.chunks[0] == sample_chunks[0]
         assert response.chunks[1] == sample_chunks[1]
