@@ -109,7 +109,7 @@ class SQLiteVecIndex(EmbeddingIndex):
                 # Create the virtual table for embeddings.
                 cur.execute(f"""
                     CREATE VIRTUAL TABLE IF NOT EXISTS [{self.vector_table}]
-                    USING vec0(embedding FLOAT[{self.dimension}], id TEXT);
+                    USING vec0(embedding FLOAT[{self.dimension}] distance_metric=cosine, id TEXT);
                 """)
                 connection.commit()
                 # FTS5 table (for keyword search) - creating both the tables by default. Will use the relevant one

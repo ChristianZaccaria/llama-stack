@@ -177,8 +177,8 @@ class FaissIndex(EmbeddingIndex):
         for d, i in zip(distances[0], indices[0], strict=False):
             if i < 0:
                 continue
-            # For IndexFlatIP with normalized vectors, distance is cosine similarity in [0,1]
-            score = float(d)
+            # For IndexFlatIP with normalized vectors, d is cosine similarity in [-1,1]
+            score = (float(d) + 1.0) / 2.0  # rescale to [0,1]
             logger.info(f"Computed score {score} from distance {d} for chunk id {self.chunk_ids[int(i)]}")
             if score < score_threshold:
                 continue
