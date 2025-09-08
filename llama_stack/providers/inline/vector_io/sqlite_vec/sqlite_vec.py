@@ -248,8 +248,15 @@ class SQLiteVecIndex(EmbeddingIndex):
         chunks, scores = [], []
         for row in rows:
             _id, chunk_json, distance = row
+            distance = float(distance)
+
+            # Log unexpected distance values to understand the root cause
+            if distance < 0 or distance > 2.0:
+                logger.warning(f"Unexpected distance value {distance} for SQLite-vec (expected [0,2] for cosine)")
+
             # Cosine distance range [0,2] -> normalized to [0,1]
-            score = 1.0 - (float(distance) / 2.0)
+            score = 1.0 - (distance / 2.0)
+            logger.warning(f"Computed score {score} from distance {distance} for chunk id {_id}")
             if score < score_threshold:
                 continue
             try:
