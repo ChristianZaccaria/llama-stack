@@ -36,7 +36,7 @@ from llama_stack.providers.utils.vector_io.vector_utils import sanitize_collecti
 
 from .config import MilvusVectorIOConfig as RemoteMilvusVectorIOConfig
 
-logger = get_logger(name=__name__, category="vector_io")
+logger = get_logger(name=__name__, category="vector_io::milvus")
 
 VERSION = "v3"
 VECTOR_DBS_PREFIX = f"vector_dbs:milvus:{VERSION}::"
@@ -165,12 +165,9 @@ class MilvusIndex(EmbeddingIndex):
             output_fields=["*"],
             search_params={"params": {"radius": score_threshold}},
         )
-        results = [(Chunk(**res["entity"]["chunk_content"]), 1.0 - (res["distance"] / 2.0)) for res in search_res[0]]
-        results.sort(key=lambda x: x[1], reverse=True)
-        for chunk, score in results:
-            logger.info(f"Computed score {score} for chunk id {chunk.chunk_id}")
-
-        chunks, scores = zip(*results, strict=False) if results else ([], [])
+        chunks = [Chunk(**res["entity"]["chunk_content"]) for res in search_res[0]]
+        # Cosine distance range [0,2] -> normalize to [0,1]
+        scores = [1.0 - (res["distance"] / 2.0) for res in search_res[0]]
 
         logger.info(f"MILVUS VECTOR SEARCH RESULTS: Found {len(list(chunks))} chunks with scores {list(scores)}")
         return QueryChunksResponse(chunks=list(chunks), scores=list(scores))
