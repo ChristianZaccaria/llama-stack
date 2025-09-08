@@ -164,6 +164,9 @@ class FaissIndex(EmbeddingIndex):
         k: int,
         score_threshold: float,
     ) -> QueryChunksResponse:
+        logger.info(
+            f"FAISS VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}"
+        )
         # Normalize query embedding for cosine similarity
         query_embedding = embedding.reshape(1, -1).astype(np.float32)
         faiss.normalize_L2(query_embedding)
@@ -176,11 +179,13 @@ class FaissIndex(EmbeddingIndex):
                 continue
             # For IndexFlatIP with normalized vectors, distance is cosine similarity in [0,1]
             score = float(d)
+            logger.info(f"Computed score {score} from distance {d} for chunk id {self.chunk_ids[int(i)]}")
             if score < score_threshold:
                 continue
             chunks.append(self.chunk_by_index[int(i)])
             scores.append(score)
 
+        logger.info(f"FAISS VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(

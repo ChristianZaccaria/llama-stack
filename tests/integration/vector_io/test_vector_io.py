@@ -124,11 +124,11 @@ def test_insert_chunks(client_with_empty_registry, embedding_model_id, embedding
 
 def test_insert_chunks_with_precomputed_embeddings(client_with_empty_registry, embedding_model_id, embedding_dimension):
     vector_io_provider_params_dict = {
-        "inline::milvus": {"score_threshold": -1.0},
-        "remote::qdrant": {"score_threshold": -1.0},
-        "inline::qdrant": {"score_threshold": -1.0},
-        "inline::sqlite-vec": {"score_threshold": -1.0},
-        "inline::faiss": {"score_threshold": -1.0},
+        "inline::milvus": {"score_threshold": 0.0},
+        "remote::qdrant": {"score_threshold": 0.0},
+        "inline::qdrant": {"score_threshold": 0.0},
+        "inline::sqlite-vec": {"score_threshold": 0.0},
+        "inline::faiss": {"score_threshold": 0.0},
     }
     vector_db_id = "test_precomputed_embeddings_db"
     client_with_empty_registry.vector_dbs.register(
@@ -237,6 +237,8 @@ def test_vector_similarity_scores_are_normalized(
         "What is the capital of France?",
         # High similarity query that should match neural networks chunk
         "biological neural networks and artificial neurons",
+        # Very low similarity query to test edge case normalization
+        "xyzabc random nonsense gibberish qwerty asdfgh",
     ]
 
     for query in test_queries:

@@ -88,6 +88,9 @@ class WeaviateIndex(EmbeddingIndex):
         collection.data.delete_many(where=Filter.by_property("chunk_id").contains_any(chunk_ids))
 
     async def query_vector(self, embedding: NDArray, k: int, score_threshold: float) -> QueryChunksResponse:
+        log.info(
+            f"WEAVIATE VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}"
+        )
         sanitized_collection_name = sanitize_collection_name(self.collection_name, weaviate_format=True)
         collection = self.client.collections.get(sanitized_collection_name)
 
@@ -112,12 +115,14 @@ class WeaviateIndex(EmbeddingIndex):
                 continue
             # Cosine distance range [0,2] -> normalized to [0,1]
             score = 1.0 - (float(doc.metadata.distance) / 2.0)
+            log.info(f"Computed score {score} from distance {doc.metadata.distance} for chunk id {chunk.chunk_id}")
             if score < score_threshold:
                 continue
 
             chunks.append(chunk)
             scores.append(score)
 
+        log.info(f"WEAVIATE VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def delete(self, chunk_ids: list[str] | None = None) -> None:

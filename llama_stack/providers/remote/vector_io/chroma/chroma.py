@@ -76,6 +76,7 @@ class ChromaIndex(EmbeddingIndex):
         )
 
     async def query_vector(self, embedding: NDArray, k: int, score_threshold: float) -> QueryChunksResponse:
+        log.info(f"CHROMA VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}")
         results = await maybe_await(
             self.collection.query(
                 query_embeddings=[embedding.tolist()],
@@ -98,12 +99,14 @@ class ChromaIndex(EmbeddingIndex):
 
             # Cosine distance range [0,2] -> normalized to [0,1]
             score = 1.0 - (float(dist) / 2.0)
+            log.info(f"Computed score {score} from distance {dist} for chunk id {chunk.chunk_id}")
             if score < score_threshold:
                 continue
 
             chunks.append(chunk)
             scores.append(score)
 
+        log.info(f"CHROMA VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def delete(self):

@@ -102,6 +102,7 @@ class QdrantIndex(EmbeddingIndex):
             raise
 
     async def query_vector(self, embedding: NDArray, k: int, score_threshold: float) -> QueryChunksResponse:
+        log.info(f"QDRANT VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}")
         results = (
             await self.client.query_points(
                 collection_name=self.collection_name,
@@ -126,7 +127,9 @@ class QdrantIndex(EmbeddingIndex):
             chunks.append(chunk)
             # Cosine similarity range [-1,1] -> normalized to [0,1]
             scores.append((point.score + 1.0) / 2.0)
+            log.info(f"Computed score {point.score} for chunk id {point.id}")
 
+        log.info(f"QDRANT VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(

@@ -179,6 +179,9 @@ class PGVectorIndex(EmbeddingIndex):
         Returns:
             QueryChunksResponse with combined results
         """
+        log.info(
+            f"PGVECTOR VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}"
+        )
         pgvector_search_function = self.get_pgvector_search_function()
 
         with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
@@ -198,11 +201,13 @@ class PGVectorIndex(EmbeddingIndex):
             for doc, dist in results:
                 # Cosine distance range [0,2] -> normalized to [0,1]
                 score = 1.0 - (float(dist) / 2.0)
+                log.info(f"Computed score {score} from distance {dist} for chunk id {doc['id']}")
                 if score < score_threshold:
                     continue
                 chunks.append(Chunk(**doc))
                 scores.append(score)
 
+            log.info(f"PGVECTOR VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
             return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(

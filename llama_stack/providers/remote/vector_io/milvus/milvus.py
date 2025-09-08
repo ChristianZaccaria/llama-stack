@@ -153,6 +153,9 @@ class MilvusIndex(EmbeddingIndex):
             raise e
 
     async def query_vector(self, embedding: NDArray, k: int, score_threshold: float) -> QueryChunksResponse:
+        logger.info(
+            f"MILVUS VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}"
+        )
         search_res = await asyncio.to_thread(
             self.client.search,
             collection_name=self.collection_name,
@@ -162,12 +165,14 @@ class MilvusIndex(EmbeddingIndex):
             output_fields=["*"],
             search_params={"params": {"radius": score_threshold}},
         )
-        results = [
-            (Chunk(**res["entity"]["chunk_content"]), max(0.0, 1.0 - (res["distance"] / 2.0))) for res in search_res[0]
-        ]
+        results = [(Chunk(**res["entity"]["chunk_content"]), 1.0 - (res["distance"] / 2.0)) for res in search_res[0]]
         results.sort(key=lambda x: x[1], reverse=True)
+        for chunk, score in results:
+            logger.info(f"Computed score {score} for chunk id {chunk.chunk_id}")
 
         chunks, scores = zip(*results, strict=False) if results else ([], [])
+
+        logger.info(f"MILVUS VECTOR SEARCH RESULTS: Found {len(list(chunks))} chunks with scores {list(scores)}")
         return QueryChunksResponse(chunks=list(chunks), scores=list(scores))
 
     async def query_keyword(

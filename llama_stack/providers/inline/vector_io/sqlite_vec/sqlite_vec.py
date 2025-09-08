@@ -224,6 +224,9 @@ class SQLiteVecIndex(EmbeddingIndex):
         """
         Performs vector-based search using a virtual table for vector similarity.
         """
+        logger.info(
+            f"SQLITE-VEC VECTOR SEARCH CALLED: embedding_shape={embedding.shape}, k={k}, threshold={score_threshold}"
+        )
 
         def _execute_query():
             connection = _create_sqlite_connection(self.db_path)
@@ -256,7 +259,7 @@ class SQLiteVecIndex(EmbeddingIndex):
 
             # Cosine distance range [0,2] -> normalized to [0,1]
             score = 1.0 - (distance / 2.0)
-            logger.warning(f"Computed score {score} from distance {distance} for chunk id {_id}")
+            logger.info(f"Computed score {score} from distance {distance} for chunk id {_id}")
             if score < score_threshold:
                 continue
             try:
@@ -266,6 +269,8 @@ class SQLiteVecIndex(EmbeddingIndex):
                 continue
             chunks.append(chunk)
             scores.append(score)
+
+        logger.info(f"SQLITE-VEC VECTOR SEARCH RESULTS: Found {len(chunks)} chunks with scores {scores}")
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(
