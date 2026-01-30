@@ -193,7 +193,8 @@ async def test_responses_store_pagination_invalid_after():
         await store.initialize()
 
         # Try to paginate with non-existent ID
-        with pytest.raises(ValueError, match="Record with id.*'non-existent' not found in table 'openai_responses'"):
+        # Note: build_store uses table_name="responses", so the error message reflects that
+        with pytest.raises(ValueError, match="Record with id.*'non-existent' not found in table 'responses'"):
             await store.list_responses(after="non-existent", limit=2)
 
 
